@@ -35,7 +35,9 @@ const GameBoard = ({
 
     // If there's a tile from the board state
     if (tile) {
-      const isLastMove = lastMove.some(move => move.row === row && move.col === col);
+      // Handle lastMove properly - it could be an object with moves array or null
+      const lastMoveArray = lastMove?.moves || [];
+      const isLastMove = lastMoveArray.some && lastMoveArray.some(move => move.row === row && move.col === col);
       return (
         <div className={classNames('tile', 'board-tile', { 'last-move': isLastMove })}>
           <span className="tile-letter">

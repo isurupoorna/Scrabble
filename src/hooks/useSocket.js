@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 // Import real socket.io-client or mock for testing
-import { io } from '../services/mockSocket.js'; // Use mock for testing
-// import { io } from 'socket.io-client'; // Use real socket.io when backend is ready
+// import { io } from '../services/mockSocket.js'; // Use mock for testing
+import { io } from 'socket.io-client'; // Use real socket.io when backend is ready
 
 const useSocket = () => {
   const [socket, setSocket] = useState(null);

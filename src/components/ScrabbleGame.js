@@ -51,7 +51,13 @@ function ScrabbleGame() {
   // Socket event handlers
   const handleLobbyStatus = useCallback((data) => {
     console.log('Lobby status:', data);
-    setIsLoading(false);
+    if (data.waiting) {
+      setIsLoading(true);
+      setConnectionStatus('connected');
+    } else {
+      setIsLoading(false);
+      setConnectionStatus('connected');
+    }
   }, []);
 
   const handleGameStarted = useCallback((data) => {
@@ -349,7 +355,7 @@ function ScrabbleGame() {
               placedTiles={placedTiles}
               selectedSquare={selectedSquare}
               direction={direction}
-              lastMove={gameState.lastMove}
+              lastMove={gameState.lastMove || []}
             />
             
             <div className="game-controls">
