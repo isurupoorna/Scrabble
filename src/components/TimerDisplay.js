@@ -35,12 +35,14 @@ const TimerDisplay = ({ timers = {}, currentPlayer, players = [] }) => {
     const playerId = player.playerId;
     const playerTime = localTimers[playerId] || 0;
     const isCurrentPlayer = playerId === currentPlayer;
-    const isLowTime = playerTime <= 30 && playerTime > 0;
+    const isWarningTime = playerTime <= 120 && playerTime > 30; // 2 minutes
+    const isLowTime = playerTime <= 30 && playerTime > 10;
     const isCriticalTime = playerTime <= 10 && playerTime > 0;
     const isTimeUp = playerTime <= 0;
 
     const timerClasses = classNames('player-timer', {
       'current-turn': isCurrentPlayer,
+      'warning-time': isWarningTime,
       'low-time': isLowTime,
       'critical-time': isCriticalTime,
       'time-up': isTimeUp
@@ -70,7 +72,7 @@ const TimerDisplay = ({ timers = {}, currentPlayer, players = [] }) => {
               <div 
                 className="progress-bar"
                 style={{
-                  width: `${Math.max(0, Math.min(100, (playerTime / 300) * 100))}%`
+                  width: `${Math.max(0, Math.min(100, (playerTime / 600) * 100))}%`
                 }}
               ></div>
             </div>
@@ -80,7 +82,8 @@ const TimerDisplay = ({ timers = {}, currentPlayer, players = [] }) => {
         <div className="timer-status">
           {isTimeUp && <span className="status-text time-up">Time's Up!</span>}
           {isCriticalTime && !isTimeUp && <span className="status-text critical">Hurry!</span>}
-          {isLowTime && !isCriticalTime && <span className="status-text warning">Low Time</span>}
+          {isLowTime && !isCriticalTime && <span className="status-text warning">30 seconds!</span>}
+          {isWarningTime && !isLowTime && !isCriticalTime && <span className="status-text alert">2 minutes left</span>}
           {!isCurrentPlayer && playerTime > 0 && <span className="status-text waiting">Waiting</span>}
         </div>
       </div>
@@ -117,6 +120,30 @@ const TimerDisplay = ({ timers = {}, currentPlayer, players = [] }) => {
     if (!currentPlayer) return;
     
     const currentPlayerTime = localTimers[currentPlayer];
+    
+    // Warning at 2 minutes
+    if (currentPlayerTime === 120) {
+      try {
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        oscillator.frequency.value = 600;
+        oscillator.type = 'sine';
+        
+        gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+        gainNode.gain.linearRampToValueAtTime(0.05, audioContext.currentTime + 0.01);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.5);
+        
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.5);
+      } catch (error) {
+        // Audio not supported, ignore silently
+      }
+    }
     
     // Critical time warning at 10 seconds
     if (currentPlayerTime === 10) {
@@ -164,6 +191,10 @@ const TimerDisplay = ({ timers = {}, currentPlayer, players = [] }) => {
             <span>Current Turn</span>
           </div>
           <div className="legend-item">
+            <div className="legend-color alert"></div>
+            <span>Warning (≤2min)</span>
+          </div>
+          <div className="legend-item">
             <div className="legend-color warning"></div>
             <span>Low Time (≤30s)</span>
           </div>
@@ -183,8 +214,8 @@ const TimerDisplay = ({ timers = {}, currentPlayer, players = [] }) => {
       {/* Timer controls/info */}
       <div className="timer-info">
         <div className="timer-settings">
-          <span className="settings-label">Turn Time Limit:</span>
-          <span className="settings-value">5:00 minutes</span>
+          <span className="settings-label">Time Limit per Player:</span>
+          <span className="settings-value">10:00 minutes</span>
         </div>
         
         {currentPlayer && (

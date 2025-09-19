@@ -155,9 +155,50 @@ function createInitialGameState(playerId, playerName) {
   };
 }
 
+function createBotGameState(playerId, playerName, botDifficulty = 'advanced') {
+  const botId = 'bot-' + Date.now();
+  const botName = `Smart Bot (${botDifficulty.charAt(0).toUpperCase() + botDifficulty.slice(1)})`;
+  
+  return {
+    gameId: 'game-' + Date.now(),
+    players: [
+      {
+        playerId,
+        playerName,
+        tileCount: 7,
+        isBot: false,
+        tiles: generateRandomTiles(7)
+      },
+      {
+        playerId: botId,
+        playerName: botName,
+        tileCount: 7,
+        isBot: true,
+        botDifficulty,
+        tiles: generateRandomTiles(7)
+      }
+    ],
+    currentPlayer: playerId, // Human starts first
+    board: createEmptyBoard(),
+    scores: {
+      [playerId]: 0,
+      [botId]: 0
+    },
+    tilesRemaining: 72, // 86 - (7*2)
+    lastMove: null,
+    gameStatus: 'playing',
+    gameMode: 'bot',
+    botId
+  };
+}
+
 // --- Game Sessions ---
 const games = {};
 const timers = {};
+const timerIntervals = {}; // Track active timer intervals
+
+// Timer constants
+const GAME_TIME_LIMIT = 600; // 10 minutes = 600 seconds
 
 // --- Socket.io Handlers ---
 io.on('connection', (socket) => {
@@ -169,40 +210,72 @@ io.on('connection', (socket) => {
       case 'join_lobby': {
         playerId = msg.data.playerId;
         const playerName = msg.data.playerName;
-        // If client provides a sessionId, use it; else create a new one
-        gameId = msg.data.sessionId || findOrCreateAvailableGame();
-        if (!games[gameId]) {
-          // Create new game session with first player
-          const gameState = createInitialGameState(playerId, playerName);
+        const gameMode = msg.data.gameMode || 'multiplayer';
+        const botDifficulty = msg.data.botDifficulty;
+        
+        if (gameMode === 'bot') {
+          // Create a new bot game
+          const gameState = createBotGameState(playerId, playerName, botDifficulty);
+          gameId = gameState.gameId;
           games[gameId] = gameState;
-          timers[gameId] = { [playerId]: 300 };
-        } else {
-          // Add second player to existing session
-          const gameState = games[gameId];
-          if (gameState.players.length < 2) {
-            gameState.players.push({
-              playerId,
-              playerName,
-              tileCount: 7,
-              isBot: false,
-              tiles: generateRandomTiles(7)
-            });
-            gameState.scores[playerId] = 0;
-            gameState.gameStatus = 'playing';
-            timers[gameId][playerId] = 300;
-          }
-        }
-        socket.join(gameId);
-        // Check if we have two players to start the game
-        if (games[gameId].players.length < 2) {
-          io.to(gameId).emit('message', { type: 'lobby_status', data: { waiting: true, playersCount: games[gameId].players.length } });
-        } else {
-          // Two players present, start game
-          io.to(gameId).emit('message', { type: 'lobby_status', data: { waiting: false, playersCount: 2 } });
+          // 10 minutes = 600 seconds per player
+          timers[gameId] = { 
+            [playerId]: 600,
+            [gameState.botId]: 600
+          };
+          
+          // Start timer system for this game
+          startGameTimers(gameId);
+          
+          socket.join(gameId);
+          
+          // Send immediate game start since bot is ready
+          io.to(gameId).emit('message', { type: 'lobby_status', data: { waiting: false, playersCount: 2, isBot: true } });
           setTimeout(() => {
             io.to(gameId).emit('message', { type: 'game_started', data: games[gameId] });
             io.to(gameId).emit('message', { type: 'game_state', data: games[gameId] });
           }, 1000);
+        } else {
+          // Original multiplayer logic
+          gameId = msg.data.sessionId || findOrCreateAvailableGame();
+          if (!games[gameId]) {
+            // Create new game session with first player
+            const gameState = createInitialGameState(playerId, playerName);
+            games[gameId] = gameState;
+            // 10 minutes = 600 seconds per player
+            timers[gameId] = { [playerId]: 600 };
+          } else {
+            // Add second player to existing session
+            const gameState = games[gameId];
+            if (gameState.players.length < 2) {
+              gameState.players.push({
+                playerId,
+                playerName,
+                tileCount: 7,
+                isBot: false,
+                tiles: generateRandomTiles(7)
+              });
+              gameState.scores[playerId] = 0;
+              gameState.gameStatus = 'playing';
+              // 10 minutes = 600 seconds per player
+              timers[gameId][playerId] = 600;
+              
+              // Start timer system when second player joins
+              startGameTimers(gameId);
+            }
+          }
+          socket.join(gameId);
+          // Check if we have two players to start the game
+          if (games[gameId].players.length < 2) {
+            io.to(gameId).emit('message', { type: 'lobby_status', data: { waiting: true, playersCount: games[gameId].players.length } });
+          } else {
+            // Two players present, start game
+            io.to(gameId).emit('message', { type: 'lobby_status', data: { waiting: false, playersCount: 2 } });
+            setTimeout(() => {
+              io.to(gameId).emit('message', { type: 'game_started', data: games[gameId] });
+              io.to(gameId).emit('message', { type: 'game_state', data: games[gameId] });
+            }, 1000);
+          }
         }
         break;
       }
@@ -279,7 +352,16 @@ function findOrCreateAvailableGame() {
         });
         
         // Switch turn after a delay
-        setTimeout(() => switchTurn(msg.data.gameId), 1000);
+        setTimeout(() => {
+          switchTurn(msg.data.gameId);
+          // Check if it's bot's turn and generate move
+          const updatedGame = games[msg.data.gameId];
+          console.log(`After make_move: gameMode=${updatedGame?.gameMode}, currentPlayer=${updatedGame?.currentPlayer}, botId=${updatedGame?.botId}`);
+          if (updatedGame && updatedGame.gameMode === 'bot' && updatedGame.currentPlayer === updatedGame.botId) {
+            console.log(`Scheduling bot move for game ${msg.data.gameId} after make_move`);
+            setTimeout(() => generateBotMove(msg.data.gameId), 2000); // Give some thinking time
+          }
+        }, 1000);
         break;
       }
       case 'exchange_tiles': {
@@ -294,7 +376,16 @@ function findOrCreateAvailableGame() {
           });
         }
         io.to(gid).emit('message', { type: 'move_result', data: { success: true, action: 'exchange', tilesExchanged: tiles.length } });
-        setTimeout(() => switchTurn(gid), 1000);
+        
+        // Switch turn after a delay and check for bot move
+        setTimeout(() => {
+          switchTurn(gid);
+          // Check if it's bot's turn and generate move
+          const updatedGame = games[gid];
+          if (updatedGame && updatedGame.gameMode === 'bot' && updatedGame.currentPlayer === updatedGame.botId) {
+            setTimeout(() => generateBotMove(gid), 2000); // Give some thinking time
+          }
+        }, 1000);
         break;
       }
       case 'pass_turn': {
@@ -303,7 +394,18 @@ function findOrCreateAvailableGame() {
         if (!game) return;
         game.lastMove = { player: pid, type: 'pass', score: 0 };
         io.to(gid).emit('message', { type: 'move_result', data: { success: true, action: 'pass' } });
-        setTimeout(() => switchTurn(gid), 1000);
+        
+        // Switch turn after a delay and check for bot move
+        setTimeout(() => {
+          switchTurn(gid);
+          // Check if it's bot's turn and generate move
+          const updatedGame = games[gid];
+          console.log(`After pass turn: gameMode=${updatedGame?.gameMode}, currentPlayer=${updatedGame?.currentPlayer}, botId=${updatedGame?.botId}`);
+          if (updatedGame && updatedGame.gameMode === 'bot' && updatedGame.currentPlayer === updatedGame.botId) {
+            console.log(`Scheduling bot move for game ${gid} after pass turn`);
+            setTimeout(() => generateBotMove(gid), 2000); // Give some thinking time
+          }
+        }, 1000);
         break;
       }
     }
@@ -316,8 +418,292 @@ function switchTurn(gameId) {
   const currentIndex = game.players.findIndex(p => p.playerId === game.currentPlayer);
   const nextIndex = (currentIndex + 1) % game.players.length;
   game.currentPlayer = game.players[nextIndex].playerId;
-  timers[gameId][game.currentPlayer] = 300;
+  // Don't reset timer - keep existing time
   io.to(gameId).emit('message', { type: 'game_state', data: game });
+  
+  // Emit timer update
+  io.to(gameId).emit('message', { 
+    type: 'timer_update', 
+    data: timers[gameId] 
+  });
+}
+
+// Simple bot move generation (simplified version)
+async function generateBotMove(gameId) {
+  const game = games[gameId];
+  if (!game || !game.botId) {
+    console.log(`Bot move generation failed: Game not found or no botId for game ${gameId}`);
+    return;
+  }
+  
+  if (game.currentPlayer !== game.botId) {
+    console.log(`Bot move generation skipped: Current player ${game.currentPlayer} is not bot ${game.botId}`);
+    return;
+  }
+
+  const bot = game.players.find(p => p.playerId === game.botId);
+  if (!bot || !bot.tiles) {
+    console.log(`Bot move generation failed: Bot player not found or no tiles`);
+    return;
+  }
+
+  console.log(`Generating bot move for game ${gameId}... Bot has ${bot.tiles.length} tiles`);
+
+  // Simple bot logic: try to make a basic move
+  const botMove = generateSimpleBotMove(game, bot);
+  
+  if (botMove && botMove.type === 'move') {
+    // Apply bot move to game
+    let totalScore = 0;
+    botMove.moves.forEach(move => {
+      game.board[move.row][move.col] = {
+        letter: move.letter,
+        isBlank: move.isBlank,
+        blankLetter: move.blankLetter,
+        playerId: bot.playerId
+      };
+      totalScore += LETTER_SCORES[move.letter] || 1;
+    });
+
+    game.scores[bot.playerId] += totalScore;
+    game.lastMove = {
+      player: bot.playerId,
+      moves: botMove.moves,
+      words: [{ word: botMove.word || 'BOT_WORD', score: totalScore }],
+      score: totalScore,
+      type: 'play'
+    };
+
+    // Update bot tiles - remove used tiles and add new ones
+    botMove.moves.forEach(() => {
+      if (bot.tiles.length > 0) bot.tiles.pop();
+    });
+    const newTiles = generateRandomTiles(botMove.moves.length);
+    bot.tiles.push(...newTiles);
+
+    // Send bot move result
+    io.to(gameId).emit('message', {
+      type: 'move_result',
+      data: {
+        success: true,
+        score: totalScore,
+        words: [{ word: botMove.word || 'BOT_WORD', score: totalScore }],
+        isBot: true
+      }
+    });
+
+    console.log(`Bot made move with score: ${totalScore}`);
+
+    // Send updated game state
+    setTimeout(() => {
+      io.to(gameId).emit('message', { type: 'game_state', data: game });
+    }, 500);
+
+    // Switch turn back to human
+    setTimeout(() => switchTurn(gameId), 1500);
+  } else {
+    // Bot passes or exchanges
+    game.lastMove = { player: bot.playerId, type: 'pass', score: 0 };
+    io.to(gameId).emit('message', { 
+      type: 'move_result', 
+      data: { success: true, action: 'pass', isBot: true } 
+    });
+
+    console.log('Bot passed turn');
+    
+    // Send updated game state
+    setTimeout(() => {
+      io.to(gameId).emit('message', { type: 'game_state', data: game });
+    }, 500);
+    
+    setTimeout(() => switchTurn(gameId), 1500);
+  }
+}
+
+// Simplified bot move generation
+function generateSimpleBotMove(game, bot) {
+  const board = game.board;
+  const tiles = bot.tiles;
+  
+  // Find first empty spot that connects to existing tiles or center
+  const isFirstMove = board.every(row => row.every(cell => cell === null));
+  
+  if (isFirstMove) {
+    // First move - place a simple 3-letter word across center
+    if (tiles.length >= 3) {
+      const word = tiles.slice(0, 3).map(t => t.letter).join('');
+      return {
+        type: 'move',
+        moves: [
+          { row: 7, col: 6, letter: tiles[0].letter, isBlank: false },
+          { row: 7, col: 7, letter: tiles[1].letter, isBlank: false },
+          { row: 7, col: 8, letter: tiles[2].letter, isBlank: false }
+        ],
+        word: word
+      };
+    }
+  } else {
+    // Find existing tiles and try to connect
+    for (let row = 0; row < 15; row++) {
+      for (let col = 0; col < 14; col++) {
+        if (board[row][col] !== null && board[row][col + 1] === null) {
+          // Try to place tile to the right of existing tile
+          if (tiles.length > 0) {
+            return {
+              type: 'move',
+              moves: [
+                { row: row, col: col + 1, letter: tiles[0].letter, isBlank: false }
+              ],
+              word: board[row][col].letter + tiles[0].letter
+            };
+          }
+        }
+      }
+    }
+  }
+  
+  // No valid move found, pass
+  return { type: 'pass' };
+}
+
+// Timer Management System
+function startGameTimers(gameId) {
+  console.log(`Starting timers for game: ${gameId}`);
+  
+  // Clear existing interval if any
+  if (timerIntervals[gameId]) {
+    clearInterval(timerIntervals[gameId]);
+  }
+  
+  // Start new timer interval
+  timerIntervals[gameId] = setInterval(() => {
+    updateGameTimers(gameId);
+  }, 1000); // Update every second
+}
+
+function updateGameTimers(gameId) {
+  const game = games[gameId];
+  const gameTimers = timers[gameId];
+  
+  if (!game || !gameTimers || game.gameStatus !== 'playing') {
+    return;
+  }
+  
+  const currentPlayer = game.currentPlayer;
+  
+  if (currentPlayer && gameTimers[currentPlayer] !== undefined) {
+    // Decrease current player's time
+    gameTimers[currentPlayer] = Math.max(0, gameTimers[currentPlayer] - 1);
+    
+    // Check if time is up
+    if (gameTimers[currentPlayer] <= 0) {
+      handleTimeExpired(gameId, currentPlayer);
+      return;
+    }
+    
+    // Send timer update to clients
+    io.to(gameId).emit('message', {
+      type: 'timer_update',
+      data: gameTimers
+    });
+    
+    // Send warning at 2 minutes (120 seconds)
+    if (gameTimers[currentPlayer] === 120) {
+      io.to(gameId).emit('message', {
+        type: 'timer_warning',
+        data: { 
+          playerId: currentPlayer, 
+          timeLeft: 120, 
+          level: 'warning',
+          message: '2 minutes remaining!' 
+        }
+      });
+    }
+    
+    // Send critical warning at 30 seconds
+    if (gameTimers[currentPlayer] === 30) {
+      io.to(gameId).emit('message', {
+        type: 'timer_warning',
+        data: { 
+          playerId: currentPlayer, 
+          timeLeft: 30, 
+          level: 'critical',
+          message: '30 seconds left!' 
+        }
+      });
+    }
+    
+    // Send final warning at 10 seconds
+    if (gameTimers[currentPlayer] === 10) {
+      io.to(gameId).emit('message', {
+        type: 'timer_warning',
+        data: { 
+          playerId: currentPlayer, 
+          timeLeft: 10, 
+          level: 'final',
+          message: '10 seconds remaining!' 
+        }
+      });
+    }
+  }
+}
+
+function handleTimeExpired(gameId, playerId) {
+  const game = games[gameId];
+  if (!game) return;
+  
+  console.log(`Time expired for player ${playerId} in game ${gameId}`);
+  
+  // Auto-pass the turn
+  game.lastMove = { player: playerId, type: 'timeout_pass', score: 0 };
+  
+  // Emit timeout event
+  io.to(gameId).emit('message', {
+    type: 'player_timeout',
+    data: {
+      playerId: playerId,
+      playerName: game.players.find(p => p.playerId === playerId)?.playerName,
+      action: 'auto_pass'
+    }
+  });
+  
+  io.to(gameId).emit('message', { 
+    type: 'move_result', 
+    data: { 
+      success: true, 
+      action: 'timeout_pass',
+      message: 'Time expired - turn passed automatically'
+    } 
+  });
+  
+  // Switch to next player
+  setTimeout(() => {
+    switchTurn(gameId);
+    
+    // If it's a bot game and now it's bot's turn, generate bot move
+    const updatedGame = games[gameId];
+    if (updatedGame && updatedGame.gameMode === 'bot' && updatedGame.currentPlayer === updatedGame.botId) {
+      setTimeout(() => generateBotMove(gameId), 2000);
+    }
+  }, 2000);
+}
+
+function stopGameTimers(gameId) {
+  if (timerIntervals[gameId]) {
+    clearInterval(timerIntervals[gameId]);
+    delete timerIntervals[gameId];
+    console.log(`Stopped timers for game: ${gameId}`);
+  }
+}
+
+function pausePlayerTimer(gameId, playerId) {
+  // For future implementation - pause specific player timer
+  console.log(`Pausing timer for player ${playerId} in game ${gameId}`);
+}
+
+function resumePlayerTimer(gameId, playerId) {
+  // For future implementation - resume specific player timer
+  console.log(`Resuming timer for player ${playerId} in game ${gameId}`);
 }
 
 // --- Express REST endpoint (optional) ---

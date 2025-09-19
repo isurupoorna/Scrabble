@@ -43,10 +43,13 @@ function ScrabbleGame() {
   const { socket, isConnected } = useSocket();
   
   // Handle player name submission from welcome screen
-  const handlePlayerNameSubmit = (name) => {
+  const handlePlayerNameSubmit = (name, gameOptions = {}) => {
     setPlayerName(name);
     setShowWelcomeScreen(false);
     setIsLoading(true);
+    
+    // Store game options for later use
+    window.scrabbleGameOptions = gameOptions;
   };
 
   // Socket event handlers
@@ -104,6 +107,32 @@ function ScrabbleGame() {
   const handleGameEnd = useCallback((data) => {
     setGameEndData(data);
   }, []);
+  
+  const handleTimerWarning = useCallback((data) => {
+    console.log('Timer warning:', data);
+    // Show warning message
+    if (data.level === 'warning') {
+      setErrorMessage(`⚠️ ${data.message}`);
+    } else if (data.level === 'critical') {
+      setErrorMessage(`🚨 ${data.message}`);
+    } else if (data.level === 'final') {
+      setErrorMessage(`⏰ ${data.message}`);
+    }
+    
+    // Clear warning message after a few seconds
+    setTimeout(() => {
+      setErrorMessage('');
+    }, 3000);
+  }, []);
+  
+  const handlePlayerTimeout = useCallback((data) => {
+    console.log('Player timeout:', data);
+    setErrorMessage(`⏱️ ${data.playerName} ran out of time!`);
+    
+    setTimeout(() => {
+      setErrorMessage('');
+    }, 5000);
+  }, []);
 
   // Initialize socket listeners
   useEffect(() => {
@@ -132,22 +161,35 @@ function ScrabbleGame() {
         case 'game_ended':
           handleGameEnd(event.data);
           break;
+        case 'timer_warning':
+          handleTimerWarning(event.data);
+          break;
+        case 'player_timeout':
+          handlePlayerTimeout(event.data);
+          break;
         default:
           console.log('Unknown event:', event);
       }
     });
 
     // Join lobby on connection
+    const gameOptions = window.scrabbleGameOptions || {};
     socket.emit('message', {
       type: 'join_lobby',
-      data: { playerId, playerName }
+      data: { 
+        playerId, 
+        playerName, 
+        gameMode: gameOptions.gameMode || 'multiplayer',
+        botDifficulty: gameOptions.botDifficulty
+      }
     });
 
     return () => {
       socket.off('message');
     };
   }, [socket, playerId, playerName, handleLobbyStatus, handleGameStarted, 
-      handleGameState, handleTimerUpdate, handleMoveResult, handleBotMove, handleGameEnd]);
+      handleGameState, handleTimerUpdate, handleMoveResult, handleBotMove, handleGameEnd, 
+      handleTimerWarning, handlePlayerTimeout]);
 
   // Connection status monitoring
   useEffect(() => {

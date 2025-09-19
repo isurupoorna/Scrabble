@@ -90,6 +90,132 @@
 }
 
 .name-form {
+  .game-mode-selector {
+    margin-bottom: var(--spacing-xl);
+    
+    h3 {
+      color: var(--primary-color);
+      margin-bottom: var(--spacing-md);
+      font-size: var(--font-size-lg);
+      text-align: center;
+    }
+    
+    .mode-buttons {
+      display: flex;
+      gap: var(--spacing-md);
+      justify-content: center;
+      
+      .mode-button {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--spacing-sm);
+        padding: var(--spacing-lg);
+        border: 2px solid var(--square-border);
+        border-radius: var(--radius-md);
+        background: white;
+        cursor: pointer;
+        transition: all var(--transition-base);
+        
+        &:hover {
+          border-color: var(--accent-color);
+          background: rgba(218, 165, 32, 0.05);
+        }
+        
+        &.active {
+          border-color: var(--accent-color);
+          background: rgba(218, 165, 32, 0.1);
+          box-shadow: 0 0 0 2px rgba(218, 165, 32, 0.2);
+        }
+        
+        .mode-icon {
+          font-size: 2rem;
+        }
+        
+        .mode-label {
+          font-weight: 600;
+          color: var(--text-primary);
+          font-size: var(--font-size-base);
+        }
+        
+        @media (max-width: 480px) {
+          padding: var(--spacing-md);
+          
+          .mode-icon {
+            font-size: 1.5rem;
+          }
+          
+          .mode-label {
+            font-size: var(--font-size-sm);
+          }
+        }
+      }
+      
+      @media (max-width: 480px) {
+        flex-direction: column;
+        gap: var(--spacing-sm);
+      }
+    }
+  }
+  
+  .bot-difficulty {
+    margin-bottom: var(--spacing-xl);
+    
+    h4 {
+      color: var(--primary-color);
+      margin-bottom: var(--spacing-md);
+      font-size: var(--font-size-base);
+      text-align: center;
+    }
+    
+    .difficulty-selector {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-md);
+      
+      label {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-xs);
+        padding: var(--spacing-md);
+        border: 2px solid var(--square-border);
+        border-radius: var(--radius-md);
+        background: white;
+        cursor: pointer;
+        transition: all var(--transition-base);
+        text-align: left;
+        
+        &:hover {
+          border-color: var(--accent-color);
+          background: rgba(218, 165, 32, 0.05);
+        }
+        
+        &.active {
+          border-color: var(--accent-color);
+          background: rgba(218, 165, 32, 0.1);
+          box-shadow: 0 0 0 2px rgba(218, 165, 32, 0.2);
+        }
+        
+        input[type="radio"] {
+          display: none;
+        }
+        
+        .difficulty-name {
+          font-weight: 600;
+          color: var(--text-primary);
+          font-size: var(--font-size-base);
+        }
+        
+        .difficulty-description {
+          font-size: var(--font-size-sm);
+          color: var(--text-secondary);
+          line-height: 1.4;
+        }
+      }
+    }
+  }
+  
   .input-group {
     margin-bottom: var(--spacing-lg);
     text-align: left;

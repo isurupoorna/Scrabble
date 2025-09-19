@@ -44,6 +44,14 @@
             background: var(--warning);
           }
           
+          &.alert {
+            background: #ffc107;
+          }
+          
+          &.warning {
+            background: var(--warning);
+          }
+          
           &.critical {
             background: var(--error);
           }
@@ -103,6 +111,20 @@
     }
   }
   
+  &.warning-time {
+    border-color: #ffc107;
+    background: rgba(255, 193, 7, 0.03);
+    
+    &::before {
+      background: #ffc107;
+    }
+    
+    .time-value {
+      color: #e67e22;
+      font-weight: 600;
+    }
+  }
+  
   &.low-time {
     border-color: var(--warning);
     background: rgba(255, 193, 7, 0.05);
@@ -136,6 +158,255 @@
     
     &::before {
       background: var(--error);
+    }
+  }
+}
+
+// Timer header
+.timer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-sm);
+  
+  .timer-player-name {
+    font-size: var(--font-size-base);
+    font-weight: 600;
+    color: var(--text-primary);
+    transition: color var(--transition-base);
+  }
+  
+  .current-turn-badge {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background: var(--success);
+    color: white;
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    
+    .turn-pulse {
+      width: 6px;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.8);
+      border-radius: 50%;
+      animation: pulse 2s ease-in-out infinite;
+    }
+  }
+}
+
+// Timer display section
+.timer-display-section {
+  .time-value {
+    font-size: var(--font-size-2xl);
+    font-weight: 700;
+    color: var(--text-primary);
+    text-align: center;
+    font-family: var(--font-family-mono);
+    letter-spacing: 1px;
+    transition: all var(--transition-base);
+  }
+  
+  .timer-progress {
+    margin-top: var(--spacing-sm);
+    height: 4px;
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 2px;
+    overflow: hidden;
+    
+    .progress-bar {
+      height: 100%;
+      background: var(--success);
+      transition: all var(--transition-base);
+      border-radius: 2px;
+    }
+  }
+}
+
+// Timer status
+.timer-status {
+  margin-top: var(--spacing-sm);
+  text-align: center;
+  
+  .status-text {
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--radius-sm);
+    display: inline-block;
+    
+    &.waiting {
+      background: rgba(108, 117, 125, 0.1);
+      color: var(--text-muted);
+    }
+    
+    &.alert {
+      background: rgba(255, 193, 7, 0.1);
+      color: #e67e22;
+    }
+    
+    &.warning {
+      background: rgba(255, 193, 7, 0.2);
+      color: var(--warning);
+    }
+    
+    &.critical {
+      background: rgba(220, 53, 69, 0.1);
+      color: var(--error);
+      animation: pulse 1s ease-in-out infinite;
+    }
+    
+    &.time-up {
+      background: var(--error);
+      color: white;
+      animation: flash 2s ease-in-out infinite;
+    }
+  }
+}
+
+// Game timer stats
+.game-timer-stats {
+  margin-top: var(--spacing-lg);
+  padding: var(--spacing-md);
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--square-border);
+  
+  h4 {
+    margin-bottom: var(--spacing-md);
+    text-align: center;
+    color: var(--text-primary);
+    font-size: var(--font-size-base);
+  }
+  
+  .time-stats {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    
+    .stat-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      
+      .stat-label {
+        font-size: var(--font-size-sm);
+        color: var(--text-secondary);
+      }
+      
+      .stat-value {
+        font-weight: 600;
+        color: var(--text-primary);
+        font-family: var(--font-family-mono);
+      }
+    }
+  }
+}
+
+// Timer info section
+.timer-info {
+  margin-top: var(--spacing-lg);
+  padding: var(--spacing-md);
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  
+  .timer-settings {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-sm);
+    
+    .settings-label {
+      font-size: var(--font-size-sm);
+      color: var(--text-secondary);
+    }
+    
+    .settings-value {
+      font-weight: 600;
+      color: var(--text-primary);
+      font-family: var(--font-family-mono);
+    }
+  }
+  
+  .current-turn-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    
+    .turn-label {
+      font-size: var(--font-size-sm);
+      color: var(--text-secondary);
+    }
+    
+    .turn-player {
+      font-weight: 600;
+      color: var(--success);
+    }
+  }
+}
+
+// Animations
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+
+@keyframes flash {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+@keyframes lowTimeWarning {
+  0%, 100% { box-shadow: 0 0 0 1px rgba(255, 193, 7, 0.1); }
+  50% { box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.3); }
+}
+
+@keyframes criticalTimeWarning {
+  0%, 100% { box-shadow: 0 0 0 1px rgba(220, 53, 69, 0.2); }
+  50% { box-shadow: 0 0 0 4px rgba(220, 53, 69, 0.4); }
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .timer-display {
+    .timer-legend {
+      .legend-item {
+        font-size: var(--font-size-xs);
+        
+        .legend-color {
+          width: 10px;
+          height: 10px;
+        }
+      }
+    }
+  }
+  
+  .timer-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-xs);
+    
+    .current-turn-badge {
+      align-self: flex-end;
+    }
+  }
+  
+  .timer-display-section .time-value {
+    font-size: var(--font-size-xl);
+  }
+  
+  .game-timer-stats .time-stats {
+    .stat-item {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: var(--spacing-xs);
     }
   }
 }

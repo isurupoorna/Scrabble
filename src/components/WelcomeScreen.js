@@ -4,6 +4,8 @@ import '../styles/WelcomeScreen.scss';
 const WelcomeScreen = ({ onPlayerNameSubmit }) => {
   const [playerName, setPlayerName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [gameMode, setGameMode] = useState('multiplayer'); // multiplayer or bot
+  const [botDifficulty, setBotDifficulty] = useState('advanced');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -13,7 +15,10 @@ const WelcomeScreen = ({ onPlayerNameSubmit }) => {
     
     // Small delay for better UX
     setTimeout(() => {
-      onPlayerNameSubmit(playerName.trim());
+      onPlayerNameSubmit(playerName.trim(), {
+        gameMode, 
+        botDifficulty: gameMode === 'bot' ? botDifficulty : null
+      });
     }, 500);
   };
 
@@ -27,7 +32,18 @@ const WelcomeScreen = ({ onPlayerNameSubmit }) => {
       'Dictionary Dynamo'
     ];
     const randomName = randomNames[Math.floor(Math.random() * randomNames.length)];
-    onPlayerNameSubmit(randomName);
+    onPlayerNameSubmit(randomName, {
+      gameMode,
+      botDifficulty: gameMode === 'bot' ? botDifficulty : null
+    });
+  };
+  
+  const handleBotDifficultyChange = (e) => {
+    setBotDifficulty(e.target.value);
+  };
+  
+  const handleGameModeChange = (mode) => {
+    setGameMode(mode);
   };
 
   if (isSubmitting) {
@@ -52,9 +68,61 @@ const WelcomeScreen = ({ onPlayerNameSubmit }) => {
 
         <div className="welcome-section">
           <h2>Welcome to Scrabble!</h2>
-          <p>Enter your name to start playing against our intelligent bot opponent.</p>
+          <p>Choose your game mode and enter your name to start playing.</p>
           
           <form onSubmit={handleSubmit} className="name-form">
+            <div className="game-mode-selector">
+              <h3>Game Mode</h3>
+              <div className="mode-buttons">
+                <button 
+                  type="button" 
+                  className={`mode-button ${gameMode === 'multiplayer' ? 'active' : ''}`}
+                  onClick={() => handleGameModeChange('multiplayer')}
+                >
+                  <span className="mode-icon">👥</span>
+                  <span className="mode-label">Multiplayer</span>
+                </button>
+                <button 
+                  type="button" 
+                  className={`mode-button ${gameMode === 'bot' ? 'active' : ''}`}
+                  onClick={() => handleGameModeChange('bot')}
+                >
+                  <span className="mode-icon">🤖</span>
+                  <span className="mode-label">Play vs Bot</span>
+                </button>
+              </div>
+            </div>
+            
+            {gameMode === 'bot' && (
+              <div className="bot-difficulty">
+                <h4>Bot Difficulty</h4>
+                <div className="difficulty-selector">
+                  <label className={botDifficulty === 'basic' ? 'active' : ''}>
+                    <input
+                      type="radio"
+                      name="difficulty"
+                      value="basic"
+                      checked={botDifficulty === 'basic'}
+                      onChange={handleBotDifficultyChange}
+                    />
+                    <span className="difficulty-name">Basic</span>
+                    <span className="difficulty-description">For casual players</span>
+                  </label>
+                  <label className={botDifficulty === 'advanced' ? 'active' : ''}>
+                    <input
+                      type="radio"
+                      name="difficulty"
+                      value="advanced"
+                      checked={botDifficulty === 'advanced'}
+                      onChange={handleBotDifficultyChange}
+                    />
+                    <span className="difficulty-name">Advanced</span>
+                    <span className="difficulty-description">Strategic AI with sophisticated word choices</span>
+                  </label>
+                </div>
+              </div>
+            )}
+            
             <div className="input-group">
               <label htmlFor="playerName">Your Name:</label>
               <input
@@ -75,7 +143,7 @@ const WelcomeScreen = ({ onPlayerNameSubmit }) => {
                 className="btn btn-primary"
                 disabled={!playerName.trim()}
               >
-                Start Game
+                {gameMode === 'bot' ? 'Play Against Bot' : 'Find Opponent'}
               </button>
               <button 
                 type="button" 
