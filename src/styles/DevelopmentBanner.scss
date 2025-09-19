@@ -1,0 +1,71 @@
+// Development Banner Styling
+// Shows when mock backend is active
+
+.development-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(90deg, #ff9800 0%, #f57c00 100%);
+  color: white;
+  z-index: var(--z-sticky);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  border-bottom: 2px solid #ef6c00;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  animation: slideDown 0.5s ease;
+}
+
+.banner-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-xs) var(--spacing-md);
+  max-width: 1200px;
+  margin: 0 auto;
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: var(--spacing-xs);
+    text-align: center;
+  }
+}
+
+.banner-icon {
+  font-size: var(--font-size-lg);
+  animation: rotate 3s linear infinite;
+}
+
+.banner-text {
+  strong {
+    font-weight: 700;
+  }
+}
+
+.banner-features {
+  font-size: var(--font-size-xs);
+  opacity: 0.9;
+  
+  @media (max-width: 768px) {
+    font-size: 10px;
+  }
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}

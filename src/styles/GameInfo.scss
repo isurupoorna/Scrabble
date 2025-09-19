@@ -1,0 +1,309 @@
+@import './Modals.scss';
+
+.game-info {
+  background: var(--surface);
+  border-radius: var(--border-radius-lg);
+  padding: var(--spacing-lg);
+  box-shadow: 0 4px 16px var(--shadow);
+  min-width: 280px;
+  
+  .info-section {
+    margin-bottom: var(--spacing-lg);
+    
+    &:last-child {
+      margin-bottom: 0;
+    }
+    
+    h3, h4 {
+      margin-bottom: var(--spacing-md);
+      color: var(--text-primary);
+      font-weight: 600;
+      border-bottom: 2px solid var(--border-color);
+      padding-bottom: var(--spacing-sm);
+    }
+  }
+  
+  .players-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+  }
+  
+  .player-info {
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius-md);
+    border: 1px solid var(--border-color);
+    transition: all var(--transition-fast);
+    
+    &.current-turn {
+      border-color: var(--primary-color);
+      background: rgba(139, 69, 19, 0.05);
+      box-shadow: 0 0 0 1px var(--primary-color);
+    }
+    
+    &.this-player {
+      background: rgba(255, 215, 0, 0.1);
+      border-color: var(--accent-color);
+    }
+    
+    .player-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--spacing-sm);
+      
+      .player-name {
+        font-weight: 600;
+        color: var(--text-primary);
+      }
+      
+      .you-indicator {
+        font-size: var(--font-size-xs);
+        color: var(--accent-color);
+        font-weight: 600;
+        margin-left: var(--spacing-xs);
+      }
+      
+      .turn-indicator {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-xs);
+        color: var(--primary-color);
+        font-size: var(--font-size-xs);
+        font-weight: 600;
+        
+        .turn-icon {
+          animation: pulse 1s ease-in-out infinite;
+        }
+      }
+    }
+    
+    .player-stats {
+      display: flex;
+      gap: var(--spacing-md);
+      
+      .stat-item {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-xs);
+        
+        .stat-label {
+          font-size: var(--font-size-xs);
+          color: var(--text-secondary);
+          font-weight: 500;
+        }
+        
+        .stat-value {
+          font-weight: 600;
+          color: var(--text-primary);
+          
+          &.score {
+            color: var(--primary-color);
+            font-size: var(--font-size-lg);
+          }
+        }
+      }
+    }
+    
+    .bot-indicator {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-xs);
+      margin-top: var(--spacing-sm);
+      font-size: var(--font-size-xs);
+      color: var(--text-muted);
+      font-style: italic;
+    }
+  }
+  
+  .scoreboard {
+    .score-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-xs);
+    }
+    
+    .score-item {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+      padding: var(--spacing-sm);
+      border-radius: var(--border-radius-sm);
+      background: rgba(0, 0, 0, 0.02);
+      
+      &.this-player {
+        background: rgba(255, 215, 0, 0.1);
+        border: 1px solid var(--accent-color);
+      }
+      
+      &.leading {
+        background: rgba(40, 167, 69, 0.1);
+        border: 1px solid var(--success-color);
+      }
+      
+      .score-rank {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-xs);
+        font-weight: 700;
+        color: var(--text-secondary);
+        min-width: 30px;
+        
+        .crown {
+          font-size: var(--font-size-sm);
+        }
+      }
+      
+      .score-player {
+        flex: 1;
+        font-weight: 500;
+        color: var(--text-primary);
+      }
+      
+      .score-points {
+        font-weight: 700;
+        color: var(--primary-color);
+        font-size: var(--font-size-lg);
+      }
+    }
+  }
+  
+  .game-stats {
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--spacing-sm);
+      
+      .stat-item {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-xs);
+        
+        .stat-label {
+          font-size: var(--font-size-xs);
+          color: var(--text-secondary);
+          font-weight: 500;
+        }
+        
+        .stat-value {
+          font-weight: 600;
+          color: var(--text-primary);
+        }
+      }
+    }
+  }
+  
+  .last-move-info {
+    .move-details {
+      background: rgba(0, 0, 0, 0.02);
+      border-radius: var(--border-radius-md);
+      padding: var(--spacing-md);
+      
+      .move-player {
+        margin-bottom: var(--spacing-sm);
+        font-weight: 600;
+        color: var(--text-primary);
+      }
+      
+      .move-words {
+        margin: var(--spacing-sm) 0;
+        
+        .words-label {
+          font-size: var(--font-size-xs);
+          color: var(--text-secondary);
+          font-weight: 500;
+        }
+        
+        .words-list {
+          margin-top: var(--spacing-xs);
+          display: flex;
+          flex-wrap: wrap;
+          gap: var(--spacing-xs);
+          
+          .word-item {
+            background: var(--primary-color);
+            color: white;
+            padding: var(--spacing-xs) var(--spacing-sm);
+            border-radius: var(--border-radius-sm);
+            font-size: var(--font-size-xs);
+            font-weight: 600;
+          }
+        }
+      }
+      
+      .move-score {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        
+        .score-label {
+          font-size: var(--font-size-xs);
+          color: var(--text-secondary);
+        }
+        
+        .score-value {
+          font-weight: 700;
+          color: var(--success-color);
+          font-size: var(--font-size-lg);
+        }
+      }
+      
+      .move-type {
+        margin-top: var(--spacing-sm);
+        
+        .type-indicator {
+          font-size: var(--font-size-xs);
+          color: var(--text-muted);
+          font-style: italic;
+        }
+      }
+    }
+  }
+  
+  .rules-section {
+    .rules-details {
+      summary {
+        cursor: pointer;
+        font-weight: 600;
+        color: var(--text-secondary);
+        padding: var(--spacing-sm) 0;
+        
+        &:hover {
+          color: var(--primary-color);
+        }
+      }
+      
+      .rules-content {
+        margin-top: var(--spacing-sm);
+        
+        ul {
+          padding-left: var(--spacing-lg);
+          
+          li {
+            font-size: var(--font-size-sm);
+            color: var(--text-secondary);
+            margin-bottom: var(--spacing-xs);
+            line-height: 1.4;
+          }
+        }
+      }
+    }
+  }
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .game-info {
+    padding: var(--spacing-md);
+    min-width: auto;
+    
+    .game-stats .stats-grid {
+      grid-template-columns: 1fr;
+    }
+    
+    .player-stats {
+      flex-direction: column;
+      gap: var(--spacing-sm);
+    }
+  }
+}

@@ -1,0 +1,399 @@
+// Modal overlay and dialogs
+.dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-modal);
+  animation: fadeIn 0.3s ease;
+  padding: var(--spacing-lg);
+  
+  &.game-end-overlay {
+    background: rgba(0, 0, 0, 0.7);
+  }
+}
+
+// Base dialog styles
+.exchange-dialog,
+.game-end-dialog {
+  background: var(--surface);
+  border-radius: var(--border-radius-lg);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  max-width: 600px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: slideInUp 0.4s ease;
+}
+
+// Exchange Dialog specific styles
+.exchange-dialog {
+  .dialog-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-lg);
+    border-bottom: 1px solid var(--border-color);
+    
+    h2 {
+      margin: 0;
+      color: var(--text-primary);
+    }
+    
+    .close-button {
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: var(--text-muted);
+      padding: var(--spacing-xs);
+      border-radius: var(--border-radius-sm);
+      
+      &:hover {
+        background: var(--border-color);
+        color: var(--text-primary);
+      }
+    }
+  }
+  
+  .dialog-content {
+    padding: var(--spacing-lg);
+  }
+  
+  .exchange-instructions {
+    margin-bottom: var(--spacing-lg);
+    
+    p {
+      margin-bottom: var(--spacing-sm);
+      color: var(--text-secondary);
+    }
+  }
+  
+  .exchange-tiles {
+    display: flex;
+    gap: var(--spacing-sm);
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: var(--spacing-md);
+  }
+  
+  .exchange-tile {
+    width: 60px;
+    height: 60px;
+    background: var(--tile-bg);
+    border: 2px solid var(--tile-border);
+    border-radius: var(--border-radius-md);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    position: relative;
+    
+    &.selected {
+      border-color: var(--primary-color);
+      background: rgba(139, 69, 19, 0.1);
+      transform: scale(1.05);
+    }
+    
+    .tile-letter {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+    
+    .tile-score {
+      font-size: 10px;
+      color: var(--text-secondary);
+      position: absolute;
+      bottom: 4px;
+      right: 6px;
+    }
+    
+    .selection-indicator {
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      background: var(--success-color);
+      color: white;
+      border-radius: 50%;
+      width: 16px;
+      height: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+    }
+  }
+  
+  .exchange-warning {
+    display: flex;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-md);
+    background: rgba(255, 107, 53, 0.1);
+    border-radius: var(--border-radius-md);
+    border-left: 4px solid var(--warning-color);
+    margin: var(--spacing-lg) 0;
+    
+    .warning-icon {
+      font-size: var(--font-size-lg);
+    }
+    
+    .warning-text {
+      flex: 1;
+      
+      p {
+        margin-bottom: var(--spacing-xs);
+        font-size: var(--font-size-sm);
+      }
+    }
+  }
+  
+  .dialog-actions {
+    display: flex;
+    gap: var(--spacing-md);
+    justify-content: flex-end;
+    padding: var(--spacing-lg);
+    border-top: 1px solid var(--border-color);
+  }
+}
+
+// Game End Dialog specific styles
+.game-end-dialog {
+  max-width: 800px;
+  
+  .winner-announcement {
+    text-align: center;
+    padding: var(--spacing-xl);
+    
+    .winner-icon {
+      font-size: 4rem;
+      margin-bottom: var(--spacing-md);
+    }
+    
+    &.player-won {
+      background: linear-gradient(135deg, rgba(40, 167, 69, 0.1), rgba(255, 215, 0, 0.1));
+    }
+  }
+  
+  .final-scoreboard {
+    padding: 0 var(--spacing-lg);
+    
+    .scoreboard-table {
+      background: var(--surface);
+      border-radius: var(--border-radius-md);
+      overflow: hidden;
+      border: 1px solid var(--border-color);
+      
+      .score-header {
+        display: grid;
+        grid-template-columns: 60px 1fr 100px 100px 120px;
+        background: var(--primary-color);
+        color: white;
+        font-weight: 600;
+        font-size: var(--font-size-sm);
+        
+        > div {
+          padding: var(--spacing-sm);
+          text-align: center;
+        }
+      }
+      
+      .score-row {
+        display: grid;
+        grid-template-columns: 60px 1fr 100px 100px 120px;
+        border-bottom: 1px solid var(--border-color);
+        
+        &.winner-row {
+          background: rgba(255, 215, 0, 0.1);
+          font-weight: 600;
+        }
+        
+        &.current-player {
+          background: rgba(139, 69, 19, 0.05);
+        }
+        
+        > div {
+          padding: var(--spacing-sm);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          
+          &.player-cell {
+            justify-content: flex-start;
+            gap: var(--spacing-xs);
+          }
+        }
+      }
+    }
+  }
+}
+
+// Loading Screen
+.loading-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-modal);
+  color: white;
+  
+  .loading-content {
+    text-align: center;
+    max-width: 500px;
+    padding: var(--spacing-xl);
+    
+    .game-logo {
+      margin-bottom: var(--spacing-xxl);
+      
+      h1 {
+        font-size: 3rem;
+        font-weight: 800;
+        letter-spacing: 4px;
+        margin-bottom: var(--spacing-sm);
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+      }
+      
+      .logo-subtitle {
+        font-size: var(--font-size-lg);
+        opacity: 0.8;
+        font-weight: 300;
+      }
+    }
+    
+    .loading-tips {
+      margin: var(--spacing-xxl) 0;
+      
+      h4 {
+        margin-bottom: var(--spacing-lg);
+        color: var(--accent-color);
+      }
+      
+      .tips-carousel {
+        .tip {
+          padding: var(--spacing-md);
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: var(--border-radius-md);
+          margin-bottom: var(--spacing-md);
+          font-size: var(--font-size-sm);
+          line-height: 1.5;
+          
+          strong {
+            color: var(--accent-color);
+          }
+        }
+      }
+    }
+  }
+  
+  .background-tiles {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    overflow: hidden;
+    
+    .floating-tile {
+      position: absolute;
+      width: 40px;
+      height: 40px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: var(--border-radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      animation: floatDown 15s linear infinite;
+      
+      &.tile-0 { animation-delay: 0s; }
+      &.tile-1 { animation-delay: 2s; }
+      &.tile-2 { animation-delay: 4s; }
+      &.tile-3 { animation-delay: 6s; }
+      &.tile-4 { animation-delay: 8s; }
+    }
+  }
+}
+
+@keyframes floatDown {
+  from {
+    transform: translateY(-100px) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.7;
+  }
+  90% {
+    opacity: 0.7;
+  }
+  to {
+    transform: translateY(100vh) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+// Error Boundary
+.error-boundary {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-xl);
+  background: var(--background);
+  
+  .error-container {
+    max-width: 600px;
+    text-align: center;
+    
+    .error-icon {
+      font-size: 4rem;
+      margin-bottom: var(--spacing-xl);
+    }
+    
+    .error-actions {
+      display: flex;
+      gap: var(--spacing-md);
+      justify-content: center;
+      margin: var(--spacing-xl) 0;
+    }
+  }
+}
+
+// Responsive modal design
+@media (max-width: 768px) {
+  .dialog-overlay {
+    padding: var(--spacing-sm);
+  }
+  
+  .exchange-dialog,
+  .game-end-dialog {
+    margin: 0;
+    border-radius: var(--border-radius-md);
+  }
+  
+  .final-scoreboard .scoreboard-table {
+    .score-header,
+    .score-row {
+      grid-template-columns: 40px 1fr 80px 80px 100px;
+      font-size: var(--font-size-xs);
+      
+      > div {
+        padding: var(--spacing-xs);
+      }
+    }
+  }
+}

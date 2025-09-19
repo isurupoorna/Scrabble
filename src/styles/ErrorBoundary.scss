@@ -1,0 +1,228 @@
+// Error Boundary Styling
+// Professional error display with recovery options
+
+.error-boundary {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--error) 0%, #c62828 100%);
+  color: white;
+  padding: var(--spacing-lg);
+  font-family: var(--font-family-primary);
+}
+
+.error-container {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-2xl);
+  max-width: 600px;
+  width: 100%;
+  text-align: center;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: var(--shadow-lg);
+  animation: slideIn 0.5s ease;
+}
+
+.error-icon {
+  margin-bottom: var(--spacing-xl);
+  
+  .error-symbol {
+    font-size: 4rem;
+    animation: bounce 2s ease-in-out infinite;
+  }
+}
+
+.error-content {
+  h1 {
+    font-size: var(--font-size-3xl);
+    margin-bottom: var(--spacing-lg);
+    font-weight: 700;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  }
+  
+  .error-description {
+    font-size: var(--font-size-lg);
+    margin-bottom: var(--spacing-2xl);
+    opacity: 0.9;
+    line-height: 1.6;
+  }
+}
+
+.error-actions {
+  display: flex;
+  gap: var(--spacing-md);
+  justify-content: center;
+  margin-bottom: var(--spacing-xl);
+  flex-wrap: wrap;
+  
+  .btn {
+    min-width: 140px;
+    font-size: var(--font-size-base);
+    padding: var(--spacing-md) var(--spacing-xl);
+    
+    &.btn-primary {
+      background: white;
+      color: var(--error);
+      border-color: white;
+      
+      &:hover {
+        background: rgba(255, 255, 255, 0.9);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+      }
+    }
+    
+    &.btn-secondary {
+      background: transparent;
+      color: white;
+      border-color: rgba(255, 255, 255, 0.5);
+      
+      &:hover {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: white;
+      }
+    }
+  }
+}
+
+.error-help {
+  text-align: left;
+  margin-bottom: var(--spacing-xl);
+  
+  h3 {
+    font-size: var(--font-size-xl);
+    margin-bottom: var(--spacing-md);
+    color: var(--accent-light);
+  }
+  
+  ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    
+    li {
+      padding: var(--spacing-sm) 0;
+      padding-left: var(--spacing-lg);
+      position: relative;
+      opacity: 0.9;
+      
+      &::before {
+        content: '•';
+        position: absolute;
+        left: 0;
+        color: var(--accent-light);
+        font-weight: bold;
+      }
+    }
+  }
+}
+
+.error-details {
+  margin-top: var(--spacing-xl);
+  text-align: left;
+  
+  summary {
+    cursor: pointer;
+    padding: var(--spacing-sm);
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--spacing-md);
+    font-weight: 500;
+    
+    &:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+  }
+  
+  .error-stack {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md);
+    
+    h4 {
+      margin-bottom: var(--spacing-sm);
+      font-size: var(--font-size-base);
+      color: var(--accent-light);
+    }
+    
+    pre {
+      font-family: 'Courier New', monospace;
+      font-size: var(--font-size-sm);
+      white-space: pre-wrap;
+      word-break: break-word;
+      margin: 0 0 var(--spacing-md) 0;
+      opacity: 0.8;
+      max-height: 200px;
+      overflow-y: auto;
+      background: rgba(0, 0, 0, 0.2);
+      padding: var(--spacing-sm);
+      border-radius: var(--radius-sm);
+    }
+  }
+}
+
+.error-footer {
+  text-align: center;
+  margin-top: var(--spacing-xl);
+  padding-top: var(--spacing-lg);
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  opacity: 0.7;
+  
+  p {
+    margin-bottom: var(--spacing-sm);
+    font-size: var(--font-size-sm);
+  }
+  
+  .error-id {
+    font-family: 'Courier New', monospace;
+    font-size: var(--font-size-xs);
+    opacity: 0.5;
+  }
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .error-container {
+    padding: var(--spacing-xl);
+    margin: var(--spacing-md);
+  }
+  
+  .error-content {
+    h1 {
+      font-size: var(--font-size-2xl);
+    }
+    
+    .error-description {
+      font-size: var(--font-size-base);
+    }
+  }
+  
+  .error-actions {
+    flex-direction: column;
+    
+    .btn {
+      width: 100%;
+      min-width: auto;
+    }
+  }
+  
+  .error-icon .error-symbol {
+    font-size: 3rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .error-boundary {
+    padding: var(--spacing-md);
+  }
+  
+  .error-container {
+    padding: var(--spacing-lg);
+  }
+  
+  .error-help ul li {
+    font-size: var(--font-size-sm);
+  }
+}

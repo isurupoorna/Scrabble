@@ -1,0 +1,354 @@
+.player-rack-container {
+  background: var(--surface);
+  border-radius: var(--border-radius-lg);
+  padding: var(--spacing-lg);
+  box-shadow: 0 4px 16px var(--shadow);
+  max-width: 600px;
+  margin: 0 auto;
+  
+  // Wood grain effect
+  position: relative;
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+      linear-gradient(45deg, 
+        rgba(139, 115, 85, 0.05) 0%, 
+        rgba(222, 184, 135, 0.05) 50%, 
+        rgba(139, 115, 85, 0.05) 100%);
+    border-radius: var(--border-radius-lg);
+    pointer-events: none;
+    z-index: -1;
+  }
+}
+
+.rack-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-md);
+  
+  h3 {
+    margin: 0;
+    color: var(--text-primary);
+    font-weight: 600;
+  }
+  
+  .rack-stats {
+    display: flex;
+    gap: var(--spacing-md);
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    
+    .tile-count {
+      font-weight: 600;
+    }
+    
+    .total-score {
+      color: var(--primary-color);
+      font-weight: 600;
+    }
+  }
+}
+
+.rack-tiles {
+  display: flex;
+  gap: var(--spacing-sm);
+  justify-content: center;
+  padding: var(--spacing-md);
+  background: rgba(139, 115, 85, 0.1);
+  border-radius: var(--border-radius-md);
+  border: 2px solid var(--tile-border);
+  margin-bottom: var(--spacing-lg);
+  
+  // Rack groove effect
+  box-shadow: 
+    inset 0 2px 4px rgba(0, 0, 0, 0.1),
+    0 1px 2px rgba(255, 255, 255, 0.8);
+}
+
+.rack-tile {
+  width: 50px;
+  height: 50px;
+  background: var(--tile-bg);
+  border: 2px solid var(--tile-border);
+  border-radius: var(--border-radius-md);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: relative;
+  transition: all var(--transition-fast);
+  user-select: none;
+  
+  // Tile 3D effect
+  box-shadow: 
+    0 3px 6px var(--tile-shadow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+  
+  // Subtle gradient
+  background: linear-gradient(135deg, 
+    var(--tile-bg) 0%, 
+    rgba(245, 222, 179, 0.8) 100%);
+  
+  &:hover:not(.empty-slot):not(.placed) {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 
+      0 5px 10px var(--tile-shadow),
+      inset 0 1px 0 rgba(255, 255, 255, 0.6),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+    z-index: var(--z-elevated);
+  }
+  
+  &.dragging {
+    opacity: 0.6;
+    transform: rotate(5deg) scale(1.1);
+    z-index: var(--z-elevated);
+  }
+  
+  &.drag-over {
+    background: rgba(255, 215, 0, 0.2);
+    border-color: var(--accent-color);
+    transform: scale(1.05);
+  }
+  
+  &.placed {
+    opacity: 0.5;
+    cursor: not-allowed;
+    
+    &::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.1);
+      border-radius: inherit;
+    }
+  }
+  
+  &.blank-tile {
+    background: linear-gradient(135deg, 
+      rgba(255, 255, 255, 0.9) 0%, 
+      rgba(240, 240, 240, 0.9) 100%);
+    border-color: var(--text-muted);
+    
+    .tile-letter {
+      color: var(--text-muted);
+    }
+  }
+  
+  &.empty-slot {
+    background: rgba(0, 0, 0, 0.05);
+    border: 2px dashed var(--border-color);
+    cursor: default;
+    
+    &:hover {
+      transform: none;
+      box-shadow: none;
+    }
+    
+    &.drag-over {
+      background: rgba(40, 167, 69, 0.1);
+      border-color: var(--success-color);
+    }
+  }
+  
+  .tile-letter {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1;
+    text-shadow: 0 1px 1px rgba(255, 255, 255, 0.8);
+  }
+  
+  .tile-score {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    position: absolute;
+    bottom: 3px;
+    right: 4px;
+  }
+  
+  .empty-text {
+    font-size: 10px;
+    color: var(--text-muted);
+    font-weight: 500;
+    text-transform: uppercase;
+  }
+  
+  .placed-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 107, 53, 0.2);
+    border-radius: inherit;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 8px;
+    font-weight: 700;
+    color: var(--warning-color);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    animation: pulse 1s ease-in-out infinite;
+  }
+}
+
+.rack-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-md);
+  
+  .shuffle-btn {
+    min-width: 100px;
+    font-size: var(--font-size-sm);
+    
+    &:hover:not(:disabled) {
+      transform: translateY(-1px) rotate(5deg);
+    }
+  }
+  
+  .rack-help {
+    font-size: var(--font-size-xs);
+    color: var(--text-muted);
+    text-align: right;
+    line-height: 1.3;
+    max-width: 200px;
+  }
+}
+
+.tile-info {
+  border-top: 1px solid var(--border-color);
+  padding-top: var(--spacing-md);
+  
+  .tile-distribution {
+    summary {
+      cursor: pointer;
+      font-weight: 600;
+      color: var(--text-secondary);
+      padding: var(--spacing-sm) 0;
+      
+      &:hover {
+        color: var(--primary-color);
+      }
+    }
+    
+    .distribution-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(40px, 1fr));
+      gap: var(--spacing-xs);
+      margin-top: var(--spacing-sm);
+      
+      .distribution-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: var(--spacing-xs);
+        background: rgba(0, 0, 0, 0.02);
+        border-radius: var(--border-radius-sm);
+        font-size: var(--font-size-xs);
+        
+        .dist-letter {
+          font-weight: 700;
+          color: var(--text-primary);
+        }
+        
+        .dist-score {
+          color: var(--text-secondary);
+          font-size: 10px;
+        }
+      }
+    }
+  }
+}
+
+// Drag and drop animations
+@keyframes tilePickup {
+  0% { transform: scale(1) rotate(0deg); }
+  100% { transform: scale(1.1) rotate(5deg); }
+}
+
+@keyframes tileDrop {
+  0% { transform: scale(1.1) rotate(5deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .player-rack-container {
+    padding: var(--spacing-md);
+    margin: 0 var(--spacing-sm);
+  }
+  
+  .rack-header {
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    text-align: center;
+    
+    .rack-stats {
+      justify-content: center;
+    }
+  }
+  
+  .rack-tiles {
+    gap: var(--spacing-xs);
+    padding: var(--spacing-sm);
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  
+  .rack-tile {
+    width: 45px;
+    height: 45px;
+    
+    .tile-letter {
+      font-size: 20px;
+    }
+    
+    .tile-score {
+      font-size: 9px;
+      bottom: 2px;
+      right: 3px;
+    }
+  }
+  
+  .rack-controls {
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    text-align: center;
+    
+    .rack-help {
+      max-width: none;
+      text-align: center;
+    }
+  }
+  
+  .tile-distribution .distribution-grid {
+    grid-template-columns: repeat(auto-fit, minmax(35px, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .rack-tile {
+    width: 40px;
+    height: 40px;
+    
+    .tile-letter {
+      font-size: 18px;
+    }
+    
+    .tile-score {
+      font-size: 8px;
+    }
+  }
+  
+  .rack-tiles {
+    gap: 2px;
+  }
+}
