@@ -13,7 +13,8 @@ import {
   promptName, 
   DIRECTIONS, 
   isValidPosition,
-  getNextPosition
+  getNextPosition,
+  validateMove
 } from '../utils/gameConstants';
 import '../styles/ScrabbleGame.scss';
 
@@ -256,8 +257,21 @@ function ScrabbleGame() {
       id: `placed-${Date.now()}-${Math.random()}`
     };
 
-    setPlacedTiles(prev => [...prev, newTile]);
-    setErrorMessage('');
+    const updatedPlacedTiles = [...placedTiles, newTile];
+    setPlacedTiles(updatedPlacedTiles);
+    
+    // Provide real-time validation feedback
+    if (updatedPlacedTiles.length > 1) {
+      const validation = validateMove(gameState.board, updatedPlacedTiles);
+      if (!validation.isValid) {
+        // Show warning but don't block placement (just inform user)
+        setErrorMessage(`Warning: ${validation.errors[0]}`);
+      } else {
+        setErrorMessage('');
+      }
+    } else {
+      setErrorMessage('');
+    }
   };
 
   const handleSubmitMove = () => {
@@ -265,7 +279,17 @@ function ScrabbleGame() {
       return;
     }
 
-    // TODO: Add client-side validation for word connections
+    // Validate move before submitting
+    const validation = validateMove(gameState.board, placedTiles);
+    
+    if (!validation.isValid) {
+      // Show all validation errors
+      setErrorMessage(validation.errors.join('. '));
+      return;
+    }
+    
+    // Clear any previous errors
+    setErrorMessage('');
     
     socket.emit('message', {
       type: 'make_move',
@@ -340,8 +364,18 @@ function ScrabbleGame() {
 
       {/* Error message display */}
       {errorMessage && (
-        <div className="error-message">
-          {errorMessage}
+        <div className={`message-display ${errorMessage.startsWith('Warning') ? 'warning' : 'error'}`}>
+          <span className="message-icon">
+            {errorMessage.startsWith('Warning') ? '⚠️' : '❌'}
+          </span>
+          <span className="message-text">{errorMessage}</span>
+          <button 
+            className="message-close" 
+            onClick={() => setErrorMessage('')}
+            aria-label="Close message"
+          >
+            ×
+          </button>
         </div>
       )}
 
@@ -360,11 +394,15 @@ function ScrabbleGame() {
             
             <div className="game-controls">
               <button 
-                className="btn btn-primary"
+                className={`btn ${placedTiles.length > 0 && gameState ? 
+                  (validateMove(gameState.board, placedTiles).isValid ? 'btn-primary' : 'btn-warning') 
+                  : 'btn-primary'}`}
                 onClick={handleSubmitMove}
                 disabled={placedTiles.length === 0 || currentPlayer !== playerId}
+                title={placedTiles.length > 0 && gameState && !validateMove(gameState.board, placedTiles).isValid ? 
+                  'Move has validation issues - click to see details' : 'Submit your move'}
               >
-                Submit Move
+                Submit Move {placedTiles.length > 0 && gameState && !validateMove(gameState.board, placedTiles).isValid ? '⚠️' : ''}
               </button>
               <button 
                 className="btn btn-secondary"

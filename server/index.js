@@ -18,6 +18,103 @@ const LETTER_SCORES = {
   U: 1, V: 4, W: 4, X: 8, Y: 4, Z: 10, _: 0
 };
 
+// Server-side validation functions
+function isFirstMove(board) {
+  for (let row = 0; row < 15; row++) {
+    for (let col = 0; col < 15; col++) {
+      if (board[row][col] !== null) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+function coversCenter(moves) {
+  return moves.some(move => move.row === 7 && move.col === 7);
+}
+
+function areMovesConnected(moves) {
+  if (moves.length <= 1) return true;
+  
+  const sorted = [...moves].sort((a, b) => {
+    if (a.row === b.row) return a.col - b.col;
+    return a.row - b.row;
+  });
+  
+  const firstMove = sorted[0];
+  const isHorizontal = sorted.every(move => move.row === firstMove.row);
+  const isVertical = sorted.every(move => move.col === firstMove.col);
+  
+  if (!isHorizontal && !isVertical) return false;
+  
+  for (let i = 1; i < sorted.length; i++) {
+    const prev = sorted[i - 1];
+    const curr = sorted[i];
+    
+    if (isHorizontal && curr.col !== prev.col + 1) return false;
+    if (isVertical && curr.row !== prev.row + 1) return false;
+  }
+  
+  return true;
+}
+
+function movesConnectToBoard(board, moves) {
+  const directions = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+  
+  for (const move of moves) {
+    for (const [dRow, dCol] of directions) {
+      const adjRow = move.row + dRow;
+      const adjCol = move.col + dCol;
+      
+      if (adjRow >= 0 && adjRow < 15 && adjCol >= 0 && adjCol < 15) {
+        if (board[adjRow][adjCol] !== null) {
+          return true;
+        }
+      }
+    }
+  }
+  
+  return false;
+}
+
+function validateMove(board, moves) {
+  const errors = [];
+  
+  if (moves.length === 0) {
+    errors.push('No tiles placed');
+    return { isValid: false, errors };
+  }
+  
+  // Check if tiles are connected
+  if (!areMovesConnected(moves)) {
+    errors.push('Tiles must form a continuous word');
+  }
+  
+  // Check for tile overlaps
+  for (const move of moves) {
+    if (board[move.row][move.col] !== null) {
+      errors.push('Cannot place tile on occupied square');
+    }
+  }
+  
+  // First move validation
+  if (isFirstMove(board)) {
+    if (!coversCenter(moves)) {
+      errors.push('First word must cover the center star');
+    }
+  } else {
+    if (!movesConnectToBoard(board, moves)) {
+      errors.push('New tiles must connect to existing tiles');
+    }
+  }
+  
+  return {
+    isValid: errors.length === 0,
+    errors
+  };
+}
+
 function generateRandomTiles(count) {
   const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
   const tiles = [];
@@ -124,6 +221,23 @@ function findOrCreateAvailableGame() {
         const { moves, playerId: pid } = msg.data;
         const game = games[msg.data.gameId];
         if (!game) return;
+        
+        // Validate the move server-side
+        const validation = validateMove(game.board, moves);
+        if (!validation.isValid) {
+          // Send error back to client
+          io.to(msg.data.gameId).emit('message', {
+            type: 'move_result',
+            data: {
+              success: false,
+              error: validation.errors.join('. '),
+              errors: validation.errors
+            }
+          });
+          return;
+        }
+        
+        // Move is valid, process it
         let totalScore = 0;
         moves.forEach(move => {
           game.board[move.row][move.col] = {
@@ -134,6 +248,7 @@ function findOrCreateAvailableGame() {
           };
           totalScore += LETTER_SCORES[move.letter] || 1;
         });
+        
         game.scores[pid] += totalScore;
         game.lastMove = {
           player: pid,
@@ -142,6 +257,8 @@ function findOrCreateAvailableGame() {
           score: totalScore,
           type: 'play'
         };
+        
+        // Update player tiles
         const player = game.players.find(p => p.playerId === pid);
         if (player && player.tiles) {
           moves.forEach(() => {
@@ -150,7 +267,18 @@ function findOrCreateAvailableGame() {
           const newTiles = generateRandomTiles(moves.length);
           player.tiles.push(...newTiles);
         }
-        io.to(msg.data.gameId).emit('message', { type: 'move_result', data: { success: true, score: totalScore, words: [{ word: 'SCRABBLE', score: totalScore }] } });
+        
+        // Send success response
+        io.to(msg.data.gameId).emit('message', {
+          type: 'move_result',
+          data: {
+            success: true,
+            score: totalScore,
+            words: [{ word: 'SCRABBLE', score: totalScore }]
+          }
+        });
+        
+        // Switch turn after a delay
         setTimeout(() => switchTurn(msg.data.gameId), 1000);
         break;
       }
