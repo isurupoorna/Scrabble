@@ -139,3 +139,266 @@
     }
   }
 }
+
+.timer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-sm);
+  
+  .timer-player-name {
+    font-weight: 600;
+    font-size: var(--font-size-md);
+    color: var(--text-primary);
+  }
+  
+  .current-turn-badge {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    background: var(--success);
+    color: white;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--radius-full);
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    
+    .turn-pulse {
+      width: 6px;
+      height: 6px;
+      background: white;
+      border-radius: 50%;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+  }
+}
+
+.timer-display .time-value {
+  font-size: var(--font-size-xxl);
+  font-weight: 700;
+  font-family: 'Courier New', monospace;
+  color: var(--text-primary);
+  text-align: center;
+  margin-bottom: var(--spacing-xs);
+}
+
+.timer-progress {
+  height: 4px;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: var(--spacing-xs);
+  
+  .progress-bar {
+    height: 100%;
+    background: var(--success);
+    transition: all var(--transition-base);
+    
+    .low-time & {
+      background: var(--warning);
+    }
+    
+    .critical-time & {
+      background: var(--error);
+      animation: pulse 1s ease-in-out infinite;
+    }
+  }
+}
+
+.timer-status {
+  margin-top: var(--spacing-sm);
+  text-align: center;
+  
+  .status-text {
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--radius-sm);
+    
+    &.time-up {
+      background: var(--error);
+      color: white;
+      animation: pulse 1s ease-in-out infinite;
+    }
+    
+    &.critical {
+      background: rgba(220, 53, 69, 0.1);
+      color: var(--error);
+    }
+    
+    &.warning {
+      background: rgba(255, 193, 7, 0.1);
+      color: var(--warning);
+    }
+    
+    &.waiting {
+      background: rgba(0, 0, 0, 0.05);
+      color: var(--text-muted);
+    }
+  }
+}
+
+.game-timer-stats {
+  margin-top: var(--spacing-lg);
+  padding: var(--spacing-md);
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  
+  h4 {
+    margin-bottom: var(--spacing-md);
+    color: var(--text-primary);
+    font-size: var(--font-size-md);
+    text-align: center;
+  }
+  
+  .time-stats {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+    
+    .stat-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: var(--font-size-sm);
+      
+      .stat-label {
+        color: var(--text-muted);
+      }
+      
+      .stat-value {
+        font-weight: 600;
+        color: var(--text-primary);
+        font-family: 'Courier New', monospace;
+      }
+    }
+  }
+}
+
+.timer-info {
+  margin-top: var(--spacing-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  
+  .timer-settings {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-sm);
+    background: rgba(0, 0, 0, 0.02);
+    border-radius: var(--radius-sm);
+    
+    .settings-label {
+      font-size: var(--font-size-xs);
+      color: var(--text-muted);
+    }
+    
+    .settings-value {
+      font-size: var(--font-size-xs);
+      font-weight: 600;
+      color: var(--text-primary);
+      
+      &.sync-indicator {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-xs);
+        color: var(--success);
+        
+        .sync-dot {
+          width: 6px;
+          height: 6px;
+          background: var(--success);
+          border-radius: 50%;
+          animation: pulse 2s ease-in-out infinite;
+        }
+      }
+    }
+  }
+  
+  .current-turn-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-sm);
+    background: rgba(40, 167, 69, 0.05);
+    border-radius: var(--radius-sm);
+    border: 1px solid rgba(40, 167, 69, 0.1);
+    
+    .turn-label {
+      font-size: var(--font-size-xs);
+      color: var(--text-muted);
+    }
+    
+    .turn-player {
+      font-size: var(--font-size-xs);
+      font-weight: 600;
+      color: var(--success);
+    }
+  }
+}
+
+// Animations
+@keyframes lowTimeWarning {
+  0%, 100% {
+    box-shadow: 0 0 0 1px rgba(255, 193, 7, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.2);
+  }
+}
+
+@keyframes criticalTimeWarning {
+  0%, 100% {
+    box-shadow: 0 0 0 1px rgba(220, 53, 69, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(220, 53, 69, 0.3);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .timer-display {
+    padding: var(--spacing-md);
+    
+    .player-timer {
+      padding: var(--spacing-sm);
+      
+      .timer-header {
+        flex-direction: column;
+        gap: var(--spacing-xs);
+        align-items: flex-start;
+        
+        .current-turn-badge {
+          align-self: flex-end;
+        }
+      }
+      
+      .time-value {
+        font-size: var(--font-size-xl);
+      }
+    }
+    
+    .timer-info {
+      .timer-settings,
+      .current-turn-info {
+        flex-direction: column;
+        gap: var(--spacing-xs);
+        text-align: center;
+      }
+    }
+  }
+}

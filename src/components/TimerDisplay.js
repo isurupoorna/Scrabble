@@ -3,12 +3,31 @@ import classNames from 'classnames';
 import { formatTime } from '../utils/gameConstants';
 import '../styles/TimerDisplay.scss';
 
-const TimerDisplay = ({ timers = {}, currentPlayer, players = [] }) => {
+const TimerDisplay = ({ timers = {}, currentPlayer, players = [], gameConfig = {} }) => {
   const [localTimers, setLocalTimers] = useState({});
+  const [serverSync, setServerSync] = useState({ lastUpdate: 0, serverTime: 0 });
+  const [gameSettings, setGameSettings] = useState({
+    playerTimeLimit: 600, // 10 minutes default
+    warningThreshold: 60,
+    criticalThreshold: 30
+  });
 
-  // Update local timers when server timers change
+  // Update local timers and sync info when server data changes
   useEffect(() => {
-    setLocalTimers(timers);
+    if (timers.timers) {
+      setLocalTimers(timers.timers);
+      setServerSync({
+        lastUpdate: Date.now(),
+        serverTime: timers.serverTime || Date.now()
+      });
+      
+      if (timers.gameConfig) {
+        setGameSettings(timers.gameConfig);
+      }
+    } else if (typeof timers === 'object') {
+      // Legacy support
+      setLocalTimers(timers);
+    }
   }, [timers]);
 
   // Local countdown effect for current player
@@ -35,9 +54,10 @@ const TimerDisplay = ({ timers = {}, currentPlayer, players = [] }) => {
     const playerId = player.playerId;
     const playerTime = localTimers[playerId] || 0;
     const isCurrentPlayer = playerId === currentPlayer;
-    const isLowTime = playerTime <= 30 && playerTime > 0;
-    const isCriticalTime = playerTime <= 10 && playerTime > 0;
+    const isLowTime = playerTime <= gameSettings.warningThreshold && playerTime > gameSettings.criticalThreshold;
+    const isCriticalTime = playerTime <= gameSettings.criticalThreshold && playerTime > 0;
     const isTimeUp = playerTime <= 0;
+    const timePercentage = Math.max(0, Math.min(100, (playerTime / gameSettings.playerTimeLimit) * 100));
 
     const timerClasses = classNames('player-timer', {
       'current-turn': isCurrentPlayer,
@@ -70,7 +90,7 @@ const TimerDisplay = ({ timers = {}, currentPlayer, players = [] }) => {
               <div 
                 className="progress-bar"
                 style={{
-                  width: `${Math.max(0, Math.min(100, (playerTime / 300) * 100))}%`
+                  width: `${timePercentage}%`
                 }}
               ></div>
             </div>
@@ -165,11 +185,11 @@ const TimerDisplay = ({ timers = {}, currentPlayer, players = [] }) => {
           </div>
           <div className="legend-item">
             <div className="legend-color warning"></div>
-            <span>Low Time (≤30s)</span>
+            <span>Low Time (≤{formatTime(gameSettings.warningThreshold)})</span>
           </div>
           <div className="legend-item">
             <div className="legend-color critical"></div>
-            <span>Critical (≤10s)</span>
+            <span>Critical (≤{formatTime(gameSettings.criticalThreshold)})</span>
           </div>
         </div>
       </div>
@@ -183,8 +203,15 @@ const TimerDisplay = ({ timers = {}, currentPlayer, players = [] }) => {
       {/* Timer controls/info */}
       <div className="timer-info">
         <div className="timer-settings">
-          <span className="settings-label">Turn Time Limit:</span>
-          <span className="settings-value">5:00 minutes</span>
+          <span className="settings-label">Player Time Limit:</span>
+          <span className="settings-value">{formatTime(gameSettings.playerTimeLimit)} per player</span>
+        </div>
+        <div className="timer-settings">
+          <span className="settings-label">Server Synchronized:</span>
+          <span className="settings-value sync-indicator">
+            <span className="sync-dot"></span>
+            Live
+          </span>
         </div>
         
         {currentPlayer && (

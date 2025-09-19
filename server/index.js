@@ -12,11 +12,169 @@ const io = new Server(server, {
 });
 
 // --- Scrabble Game Logic ---
+// Game Configuration
+const GAME_CONFIG = {
+  PLAYER_TIME_LIMIT: 600, // 10 minutes per player in seconds
+  TIMER_UPDATE_INTERVAL: 1000, // Update every second
+  TIMER_WARNING_THRESHOLD: 60, // Warn when under 1 minute
+  TIMER_CRITICAL_THRESHOLD: 30, // Critical warning at 30 seconds
+  AUTO_LOSS_ON_TIMEOUT: true
+};
+
 const LETTER_SCORES = {
   A: 1, B: 3, C: 3, D: 2, E: 1, F: 4, G: 2, H: 4, I: 1, J: 8,
   K: 5, L: 1, M: 3, N: 1, O: 1, P: 3, Q: 10, R: 1, S: 1, T: 1,
   U: 1, V: 4, W: 4, X: 8, Y: 4, Z: 10, _: 0
 };
+
+// Secure Timer Management System
+class GameTimer {
+  constructor(gameId) {
+    this.gameId = gameId;
+    this.players = new Map(); // playerId -> { timeRemaining, isActive, lastUpdate }
+    this.interval = null;
+    this.startTime = Date.now();
+    this.isPaused = false;
+    this.gameEnded = false;
+  }
+
+  addPlayer(playerId) {
+    this.players.set(playerId, {
+      timeRemaining: GAME_CONFIG.PLAYER_TIME_LIMIT,
+      isActive: false,
+      lastUpdate: Date.now(),
+      totalTimeUsed: 0
+    });
+    console.log(`Timer: Added player ${playerId} with ${GAME_CONFIG.PLAYER_TIME_LIMIT}s`);
+  }
+
+  removePlayer(playerId) {
+    this.players.delete(playerId);
+  }
+
+  setActivePlayer(playerId) {
+    // Pause all players first
+    for (const [pid, player] of this.players) {
+      if (player.isActive) {
+        this.pausePlayer(pid);
+      }
+    }
+
+    // Activate the specified player
+    const player = this.players.get(playerId);
+    if (player && !this.gameEnded) {
+      player.isActive = true;
+      player.lastUpdate = Date.now();
+      console.log(`Timer: Activated player ${playerId} with ${player.timeRemaining}s remaining`);
+    }
+  }
+
+  pausePlayer(playerId) {
+    const player = this.players.get(playerId);
+    if (player && player.isActive) {
+      const now = Date.now();
+      const timeElapsed = Math.floor((now - player.lastUpdate) / 1000);
+      player.timeRemaining = Math.max(0, player.timeRemaining - timeElapsed);
+      player.totalTimeUsed += timeElapsed;
+      player.isActive = false;
+      player.lastUpdate = now;
+      console.log(`Timer: Paused player ${playerId}, ${timeElapsed}s elapsed, ${player.timeRemaining}s remaining`);
+    }
+  }
+
+  pauseAll() {
+    for (const [playerId, player] of this.players) {
+      if (player.isActive) {
+        this.pausePlayer(playerId);
+      }
+    }
+  }
+
+  getCurrentTimes() {
+    const times = {};
+    const now = Date.now();
+    
+    for (const [playerId, player] of this.players) {
+      if (player.isActive && !this.gameEnded) {
+        const timeElapsed = Math.floor((now - player.lastUpdate) / 1000);
+        times[playerId] = Math.max(0, player.timeRemaining - timeElapsed);
+      } else {
+        times[playerId] = player.timeRemaining;
+      }
+    }
+    
+    return times;
+  }
+
+  getPlayerTime(playerId) {
+    const times = this.getCurrentTimes();
+    return times[playerId] || 0;
+  }
+
+  hasPlayerTimedOut(playerId) {
+    return this.getPlayerTime(playerId) <= 0;
+  }
+
+  startMonitoring(onTimerUpdate, onPlayerTimeout, onGameEnd) {
+    if (this.interval) {
+      clearInterval(this.interval);
+    }
+
+    this.interval = setInterval(() => {
+      if (this.gameEnded) {
+        this.stopMonitoring();
+        return;
+      }
+
+      const currentTimes = this.getCurrentTimes();
+      
+      // Check for timeouts
+      for (const [playerId, timeRemaining] of Object.entries(currentTimes)) {
+        if (timeRemaining <= 0 && GAME_CONFIG.AUTO_LOSS_ON_TIMEOUT) {
+          this.gameEnded = true;
+          this.pauseAll();
+          onPlayerTimeout(playerId, this.gameId);
+          return;
+        }
+      }
+
+      // Send timer updates
+      onTimerUpdate(this.gameId, currentTimes);
+    }, GAME_CONFIG.TIMER_UPDATE_INTERVAL);
+  }
+
+  stopMonitoring() {
+    if (this.interval) {
+      clearInterval(this.interval);
+      this.interval = null;
+    }
+    this.pauseAll();
+  }
+
+  endGame() {
+    this.gameEnded = true;
+    this.stopMonitoring();
+  }
+
+  getGameStats() {
+    const stats = {
+      gameId: this.gameId,
+      gameStartTime: this.startTime,
+      gameEnded: this.gameEnded,
+      players: {}
+    };
+
+    for (const [playerId, player] of this.players) {
+      stats.players[playerId] = {
+        timeRemaining: this.getPlayerTime(playerId),
+        totalTimeUsed: player.totalTimeUsed,
+        isActive: player.isActive
+      };
+    }
+
+    return stats;
+  }
+}
 
 // Server-side validation functions
 function isFirstMove(board) {
@@ -157,7 +315,60 @@ function createInitialGameState(playerId, playerName) {
 
 // --- Game Sessions ---
 const games = {};
-const timers = {};
+const gameTimers = new Map(); // gameId -> GameTimer instance
+
+// Timer event handlers
+function handleTimerUpdate(gameId, currentTimes) {
+  // Send timer updates to all players in the game
+  io.to(gameId).emit('message', {
+    type: 'timer_update',
+    data: {
+      timers: currentTimes,
+      serverTime: Date.now(),
+      gameConfig: {
+        playerTimeLimit: GAME_CONFIG.PLAYER_TIME_LIMIT,
+        warningThreshold: GAME_CONFIG.TIMER_WARNING_THRESHOLD,
+        criticalThreshold: GAME_CONFIG.TIMER_CRITICAL_THRESHOLD
+      }
+    }
+  });
+}
+
+function handlePlayerTimeout(playerId, gameId) {
+  const game = games[gameId];
+  if (!game) return;
+
+  console.log(`Game ${gameId}: Player ${playerId} timed out!`);
+  
+  // Determine winner (the player who didn't time out)
+  const winner = game.players.find(p => p.playerId !== playerId);
+  const loser = game.players.find(p => p.playerId === playerId);
+  
+  // End the game
+  game.gameStatus = 'ended';
+  game.winner = winner?.playerId || null;
+  game.endReason = 'timeout';
+  game.endTime = Date.now();
+  
+  // Stop the timer
+  const timer = gameTimers.get(gameId);
+  if (timer) {
+    timer.endGame();
+  }
+  
+  // Notify all players
+  io.to(gameId).emit('message', {
+    type: 'game_ended',
+    data: {
+      reason: 'timeout',
+      winner: winner?.playerId || null,
+      loser: playerId,
+      finalScores: game.scores,
+      gameStats: timer?.getGameStats() || {},
+      message: `${loser?.playerName || 'Player'} ran out of time! ${winner?.playerName || 'Opponent'} wins!`
+    }
+  });
+}
 
 // --- Socket.io Handlers ---
 io.on('connection', (socket) => {
@@ -175,10 +386,18 @@ io.on('connection', (socket) => {
           // Create new game session with first player
           const gameState = createInitialGameState(playerId, playerName);
           games[gameId] = gameState;
-          timers[gameId] = { [playerId]: 300 };
+          
+          // Initialize secure timer system
+          const gameTimer = new GameTimer(gameId);
+          gameTimer.addPlayer(playerId);
+          gameTimers.set(gameId, gameTimer);
+          
+          console.log(`Created new game ${gameId} with secure timer system`);
         } else {
           // Add second player to existing session
           const gameState = games[gameId];
+          const gameTimer = gameTimers.get(gameId);
+          
           if (gameState.players.length < 2) {
             gameState.players.push({
               playerId,
@@ -189,7 +408,11 @@ io.on('connection', (socket) => {
             });
             gameState.scores[playerId] = 0;
             gameState.gameStatus = 'playing';
-            timers[gameId][playerId] = 300;
+            
+            // Add player to timer system
+            if (gameTimer) {
+              gameTimer.addPlayer(playerId);
+            }
           }
         }
         socket.join(gameId);
@@ -199,9 +422,27 @@ io.on('connection', (socket) => {
         } else {
           // Two players present, start game
           io.to(gameId).emit('message', { type: 'lobby_status', data: { waiting: false, playersCount: 2 } });
+          
+          const gameTimer = gameTimers.get(gameId);
+          const gameState = games[gameId];
+          
           setTimeout(() => {
-            io.to(gameId).emit('message', { type: 'game_started', data: games[gameId] });
-            io.to(gameId).emit('message', { type: 'game_state', data: games[gameId] });
+            // Start timer monitoring
+            if (gameTimer) {
+              gameTimer.setActivePlayer(gameState.currentPlayer);
+              gameTimer.startMonitoring(handleTimerUpdate, handlePlayerTimeout, () => {});
+              console.log(`Started timer monitoring for game ${gameId}`);
+            }
+            
+            // Send game started events
+            io.to(gameId).emit('message', { type: 'game_started', data: gameState });
+            io.to(gameId).emit('message', { type: 'game_state', data: gameState });
+            
+            // Send initial timer state
+            if (gameTimer) {
+              const currentTimes = gameTimer.getCurrentTimes();
+              handleTimerUpdate(gameId, currentTimes);
+            }
           }, 1000);
         }
         break;
@@ -310,14 +551,81 @@ function findOrCreateAvailableGame() {
   });
 });
 
+// Game management functions
 function switchTurn(gameId) {
   const game = games[gameId];
-  if (!game || game.players.length < 2) return;
+  const gameTimer = gameTimers.get(gameId);
+  
+  if (!game || game.players.length < 2 || game.gameStatus !== 'playing') {
+    return;
+  }
+  
+  // Find next player
   const currentIndex = game.players.findIndex(p => p.playerId === game.currentPlayer);
   const nextIndex = (currentIndex + 1) % game.players.length;
-  game.currentPlayer = game.players[nextIndex].playerId;
-  timers[gameId][game.currentPlayer] = 300;
-  io.to(gameId).emit('message', { type: 'game_state', data: game });
+  const nextPlayer = game.players[nextIndex];
+  
+  // Update game state
+  game.currentPlayer = nextPlayer.playerId;
+  
+  // Switch active timer
+  if (gameTimer) {
+    gameTimer.setActivePlayer(nextPlayer.playerId);
+    
+    // Send timer update immediately
+    const currentTimes = gameTimer.getCurrentTimes();
+    handleTimerUpdate(gameId, currentTimes);
+  }
+  
+  // Send game state update
+  io.to(gameId).emit('message', { 
+    type: 'game_state', 
+    data: game 
+  });
+  
+  console.log(`Game ${gameId}: Switched turn to player ${nextPlayer.playerId} (${nextPlayer.playerName})`);
+}
+
+function endGame(gameId, reason, winner = null) {
+  const game = games[gameId];
+  const gameTimer = gameTimers.get(gameId);
+  
+  if (!game) return;
+  
+  // Update game state
+  game.gameStatus = 'ended';
+  game.endReason = reason;
+  game.endTime = Date.now();
+  game.winner = winner;
+  
+  // Stop timer
+  if (gameTimer) {
+    gameTimer.endGame();
+  }
+  
+  // Notify players
+  io.to(gameId).emit('message', {
+    type: 'game_ended',
+    data: {
+      reason,
+      winner,
+      finalScores: game.scores,
+      gameStats: gameTimer?.getGameStats() || {}
+    }
+  });
+  
+  console.log(`Game ${gameId} ended: ${reason}`);
+}
+
+// Cleanup function for disconnected games
+function cleanupGame(gameId) {
+  const gameTimer = gameTimers.get(gameId);
+  if (gameTimer) {
+    gameTimer.endGame();
+    gameTimers.delete(gameId);
+  }
+  delete games[gameId];
+  console.log(`Cleaned up game ${gameId}`);
 }
 
 // --- Express REST endpoint (optional) ---

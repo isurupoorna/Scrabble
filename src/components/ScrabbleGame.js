@@ -81,7 +81,14 @@ function ScrabbleGame() {
   }, [playerId]);
 
   const handleTimerUpdate = useCallback((data) => {
-    setTimers(data);
+    // Handle both legacy timer format and new enhanced format
+    if (data.timers) {
+      // New enhanced format with game config and server sync
+      setTimers(data);
+    } else {
+      // Legacy format - just timer values
+      setTimers({ timers: data, serverTime: Date.now() });
+    }
   }, []);
 
   const handleMoveResult = useCallback((data) => {
